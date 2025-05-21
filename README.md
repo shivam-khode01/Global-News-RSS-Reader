@@ -11,7 +11,8 @@ A multi-country news aggregator that collects headlines and summaries from RSS f
 - 🌍 Detects the language of each article summary
 - 💾 Saves aggregated data to both JSON and CSV files simultaneously
 - 🔄 Removes duplicate articles based on title and URL
-- 📊 Provides a summary CSV with counts per country
+- 📊 Enhanced summary data available in both CSV and JSON formats
+- 📈 Formatted summary with article counts and historical data ranges
 - 🌐 **Bonus:** Flask API with pagination and filters
 - ⬇️ **Bonus:** API endpoints to export JSON and CSV files directly
 
@@ -40,7 +41,6 @@ A multi-country news aggregator that collects headlines and summaries from RSS f
 ### Standalone News Fetcher
 
 Run the main script to fetch news and save to files:
-
 ```bash
 python main.py
 ```
@@ -48,12 +48,24 @@ python main.py
 Output files are saved in the `output/` directory:
 - `news_data.json` - All news articles in JSON format
 - `news_data.csv` - All news articles in CSV format
-- `news_summary.csv` - Statistical summary by country
+- `news_summary_formatted.csv` - Formatted statistical summary by country (CSV)
+- `news_summary_formatted.json` - Formatted statistical summary by country (JSON)
+
+### Summary Table Format
+
+The formatted summary tables provide an easy-to-read overview with the following columns:
+
+| Country | News Agency | Total articles downloaded | Total historical data |
+|---------|------------|---------------------------|----------------------|
+| Country 1 | A, B, C | 1m | Since 2021 |
+| Country 2 | ... | ... | ... |
+
+- **Total articles downloaded**: Shows count with "m" suffix for counts over 1 million
+- **Total historical data**: Shows range as "Since YYYY" based on earliest publication date
 
 ### Flask API
 
 Start the API server:
-
 ```bash
 python Rss_reader1.py
 ```
@@ -67,11 +79,14 @@ By default, the API runs on http://localhost:5000
 | `/news` | Get paginated news articles | `country`, `agency`, `page`, `page_size` |
 | `/export/json` | Download complete news data as JSON | None |
 | `/export/csv` | Download complete news data as CSV | None |
+| `/summary/json` | Download formatted summary data as JSON | None |
+| `/summary/csv` | Download formatted summary data as CSV | None |
 
 Example requests:
 ```bash
 http://localhost:5000/news?country=India&page=2&page_size=10
 http://localhost:5000/news?agency=CNN
+http://localhost:5000/summary/json
 ```
 
 ## 🔍 Notes & Considerations
@@ -83,6 +98,8 @@ http://localhost:5000/news?agency=CNN
 
 ## ✨ Bonus Features
 
+- **Enhanced Summary Format**: Stylized summary tables with clean formatting
+- **Dual Format Exports**: All data available in both JSON and CSV formats
 - **API Integration:** Easy querying with filters and direct file export
 - **Smart Pagination:** Navigate through large datasets efficiently
 - **Performance Caching:** Minimizes repeated RSS downloads
@@ -90,13 +107,28 @@ http://localhost:5000/news?agency=CNN
 ## ⏱️ Automation (Optional)
 
 To run the fetcher daily with cron (Linux/macOS):
-
 ```bash
 crontab -e
 ```
 
 Add the following line to run at 6 AM daily:
-
 ```bash
 0 6 * * * /usr/bin/python3 /full/path/to/main.py
+```
+
+For Windows users, use Task Scheduler with a daily trigger to run the script.
+
+## 📊 Sample Output
+
+### Summary Table Example
+
+```
+|-------------|--------------|--------------------------|-------------------|
+| Country     | News Agency  | Total articles downloaded| Total historical  |
+|-------------|--------------|--------------------------|-------------------|
+| UK          | BBC          | 1.2m                     | Since 2021        |
+| USA         | CNN          | 856                      | Since 2022        |
+| Japan       | NHK          | 345                      | Since 2023        |
+| ...         | ...          | ...                      | ...               |
+|-------------|--------------|--------------------------|-------------------|
 ```
