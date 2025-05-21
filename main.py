@@ -6,9 +6,9 @@ import time
 import os
 import requests
 
-# ---------------------------
+
 # RSS Feeds from 20+ Countries
-# ---------------------------
+
 rss_feeds = {
     "UK": {"BBC": "http://feeds.bbci.co.uk/news/rss.xml"},
     "USA": {"CNN": "http://rss.cnn.com/rss/edition.rss"},
@@ -32,9 +32,8 @@ rss_feeds = {
     "Mexico": {"El Universal": "https://www.eluniversal.com.mx/rss.xml"},
 }
 
-# ---------------------------
 # Parse a Single RSS Feed
-# ---------------------------
+
 def parse_feed(country, agency, url):
     articles = []
     try:
@@ -66,9 +65,9 @@ def parse_feed(country, agency, url):
             print(f"Error parsing article from {agency} ({country}): {e}")
     return articles
 
-# ---------------------------
+
 # Collect All Articles
-# ---------------------------
+
 all_articles = []
 
 for country, agencies in rss_feeds.items():
@@ -82,9 +81,9 @@ for country, agencies in rss_feeds.items():
             print(f"Error processing {agency} ({country}): {e}")
             continue
 
-# ---------------------------
+
 # Save to CSV and JSON
-# ---------------------------
+
 df = pd.DataFrame(all_articles)
 output_dir = "output"
 os.makedirs(output_dir, exist_ok=True)
@@ -99,31 +98,64 @@ df.to_json(json_path, orient="records", force_ascii=False)
 
 print(f"\nSaved {len(df)} articles to {csv_path} and {json_path}")
 
-# ---------------------------
-# Summary Table (Enhanced Format)
-# ---------------------------
-summary_df = df.groupby(["Country"]).agg(
-    News_Agencies=("News Agency", lambda x: ", ".join(sorted(set(x)))),
-    Total_Articles=("Title", "count"),
-    Earliest_Publication=("Publication Date", lambda x: min(x) if x.any() else "N/A")
-).reset_index()
+# Summary Table 
 
-summary_df.rename(columns={
-    "Country": "Country",
-    "News_Agencies": "News Agency",
-    "Total_Articles": "Total Articles Downloaded",
-    "Earliest_Publication": "Total Historical Data"
-}, inplace=True)
+# Create new DataFrame for formatted summary table
+summary_data = []
 
-summary_path = os.path.join(output_dir, "news_summary.csv")
-summary_df.to_csv(summary_path, index=False)
-print(f"Summary saved to {summary_path}")
+# Process each country
+for country, agencies in rss_feeds.items():
+    country_data = df[df["Country"] == country]
+    
+    if not country_data.empty:
+        # Get all unique news agencies for this country
+        agencies_list = ", ".join(sorted(country_data["News Agency"].unique()))
+        
+        # Get article count
+        article_count = len(country_data)
+        
+        # Format article count with "m" suffix if over 1 million
+        formatted_count = f"{article_count/1000000:.1f}m" if article_count >= 1000000 else str(article_count)
+        
+        # Get earliest publication date
+        if not country_data["Publication Date"].empty:
+            try:
+                # Try to parse dates and find the earliest
+                dates = pd.to_datetime(country_data["Publication Date"], errors="coerce")
+                earliest_date = dates.min()
+                if pd.notna(earliest_date):
+                    # Format as "Since YYYY"
+                    historical_data = f"Since {earliest_date.year}"
+                else:
+                    historical_data = "N/A"
+            except:
+                historical_data = "N/A"
+        else:
+            historical_data = "N/A"
+        
+        # Add to summary data
+        summary_data.append({
+            "Country": country,
+            "News Agency": agencies_list,
+            "Total articles downloaded": formatted_count,
+            "Total historical data": historical_data
+        })
 
-# ---------------------------
-# (Optional) Cron Job Setup Hint (Linux/Mac)
-# ---------------------------
-# To schedule this script to run daily, you can add the following line to your crontab:
-# Example (runs every day at 6 AM):
-# 0 6 * * * /usr/bin/python3 /full/path/to/this_script.py
-# Use `crontab -e` to edit and `crontab -l` to list current jobs.
-# On Windows, use Task Scheduler with daily trigger.
+# Create the summary DataFrame
+summary_df = pd.DataFrame(summary_data)
+
+# Save formatted summary table in both CSV and JSON formats
+summary_csv_path = os.path.join(output_dir, "news_summary_formatted.csv")
+summary_json_path = os.path.join(output_dir, "news_summary_formatted.json")
+
+# Save to CSV
+summary_df.to_csv(summary_csv_path, index=False)
+print(f"Formatted summary saved to CSV: {summary_csv_path}")
+
+# Save to JSON
+summary_df.to_json(summary_json_path, orient="records", force_ascii=False)
+print(f"Formatted summary saved to JSON: {summary_json_path}")
+
+# Display the formatted summary table
+print("\nFormatted Summary Table:")
+print(summary_df.to_string(index=False))
